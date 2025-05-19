@@ -85,3 +85,10 @@ button:hover {
 .post button.delete {
   background-color: #dc3545;
 }
+
+.post small {
+  display: block;
+  color: #555;
+  font-size: 0.85em;
+  margin-bottom: 10px;
+}
