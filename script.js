@@ -1,39 +1,54 @@
-// Load saved posts or initialize an empty array
+// Load posts from localStorage or start with an empty array
 let posts = JSON.parse(localStorage.getItem('posts')) || [];
 
-// Flags to track editing state
+// State variables
 let editMode = false;
 let editId = null;
+let searchTerm = ''; // Current text input from search bar
 
-// DOM element references
+// Get DOM elements
 const postForm = document.getElementById('post-form');
 const titleInput = document.getElementById('title');
 const contentInput = document.getElementById('content');
 const titleError = document.getElementById('title-error');
 const contentError = document.getElementById('content-error');
 const postsContainer = document.getElementById('posts-container');
+const searchInput = document.getElementById('search');
 
-// Save the current posts array to localStorage
+/**
+ * Save posts to localStorage
+ */
 function savePosts() {
   localStorage.setItem('posts', JSON.stringify(posts));
 }
 
-// Generate a simple unique ID for each post
+/**
+ * Generate a unique ID for a new post
+ */
 function generateId() {
   return '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// Display all blog posts dynamically on the page
+/**
+ * Render blog posts on the page, applying search filter
+ */
 function renderPosts() {
-  postsContainer.innerHTML = ''; // Clear previous posts
+  postsContainer.innerHTML = '';
 
-  posts.forEach(post => {
+  // Filter posts based on search term (case-insensitive)
+  const filteredPosts = posts.filter(post =>
+    post.title.toLowerCase().includes(searchTerm) ||
+    post.content.toLowerCase().includes(searchTerm)
+  );
+
+  // Render each filtered post
+  filteredPosts.forEach(post => {
     const postEl = document.createElement('div');
     postEl.classList.add('post');
 
-    // Insert post HTML
     postEl.innerHTML = `
       <h3>${post.title}</h3>
+      <small>Posted on: ${new Date(post.timestamp).toLocaleString()}</small>
       <p>${post.content}</p>
       <button onclick="editPost('${post.id}')">Edit</button>
       <button class="delete" onclick="deletePost('${post.id}')">Delete</button>
@@ -43,13 +58,17 @@ function renderPosts() {
   });
 }
 
-// Clear error messages
+/**
+ * Clear form validation error messages
+ */
 function clearErrors() {
   titleError.textContent = '';
   contentError.textContent = '';
 }
 
-// Validate input fields and show errors if needed
+/**
+ * Validate form input fields
+ */
 function validateForm(title, content) {
   clearErrors();
   let valid = true;
@@ -67,9 +86,11 @@ function validateForm(title, content) {
   return valid;
 }
 
-// Handle form submission for creating or editing posts
+/**
+ * Handle form submission to add or update a blog post
+ */
 postForm.addEventListener('submit', function (e) {
-  e.preventDefault(); // Prevent default form behavior
+  e.preventDefault();
 
   const title = titleInput.value.trim();
   const content = contentInput.value.trim();
@@ -77,41 +98,40 @@ postForm.addEventListener('submit', function (e) {
   if (!validateForm(title, content)) return;
 
   if (editMode) {
-    // Update existing post
     const index = posts.findIndex(post => post.id === editId);
     if (index !== -1) {
       posts[index].title = title;
       posts[index].content = content;
     }
-
-    // Reset editing state
     editMode = false;
     editId = null;
   } else {
-    // Create a new post object
     const newPost = {
       id: generateId(),
       title,
       content,
       timestamp: new Date().toISOString()
     };
-
     posts.push(newPost);
   }
 
-  savePosts();     // Save to localStorage
-  renderPosts();   // Refresh UI
-  postForm.reset(); // Clear form
+  savePosts();
+  renderPosts();
+  postForm.reset();
 });
 
-// Delete post by ID
+/**
+ * Delete a post by its unique ID
+ */
 function deletePost(id) {
   posts = posts.filter(post => post.id !== id);
   savePosts();
   renderPosts();
 }
 
-// Load a post into form fields for editing
+/**
+ * Populate form with selected post for editing
+ */
 function editPost(id) {
   const post = posts.find(p => p.id === id);
   if (post) {
@@ -122,5 +142,13 @@ function editPost(id) {
   }
 }
 
-// Initial load: show all saved posts
+/**
+ * Listen for search input and update the post list accordingly
+ */
+searchInput.addEventListener('input', function () {
+  searchTerm = this.value.toLowerCase();
+  renderPosts();
+});
+
+// On page load, show saved posts
 renderPosts();
